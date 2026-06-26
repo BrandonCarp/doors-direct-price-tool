@@ -1,18 +1,40 @@
 // POST { username, password }. On success sets an HttpOnly session cookie.
-// Credentials and token can be overridden with Vercel Environment Variables:
+// Credentials/token can be overridden with Vercel Environment Variables:
 //   AUTH_USER, AUTH_PASS, AUTH_TOKEN
+function parseMaybe(raw) {
+  if (!raw) return {};
+  if (typeof raw === 'object') return raw;
+  try { return JSON.parse(raw); } catch (e) {}
+  const out = {};
+  String(raw).split('&').forEach(function (pair) {
+    const i = pair.indexOf('=');
+    if (i > -1) out[decodeURIComponent(pair.slice(0, i))] = decodeURIComponent(pair.slice(i + 1).replace(/\+/g, ' '));
+  });
+  return out;
+}
+
+function readBody(req) {
+  return new Promise(function (resolve) {
+    if (req.body !== undefined && req.body !== null && req.body !== '') {
+      resolve(parseMaybe(req.body));
+      return;
+    }
+    let data = '';
+    req.on('data', function (c) { data += c; });
+    req.on('end', function () { resolve(parseMaybe(data)); });
+    req.on('error', function () { resolve({}); });
+  });
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
     return;
   }
 
-  let body = req.body;
-  if (typeof body === 'string') {
-    try { body = JSON.parse(body); } catch (e) { body = {}; }
-  }
-  const username = body && body.username;
-  const password = body && body.password;
+  const body = await readBody(req);
+  const username = (body.username || '').trim();
+  const password = body.password || '';
 
   const U = process.env.AUTH_USER || 'Brandon';
   const P = process.env.AUTH_PASS || 'DDS7150';

@@ -1,38 +1,48 @@
-# Doors Direct Pricing Tool
+# Doors Direct Pricing Tool — Website (password protected)
 
-Internal garage-door pricing tool. Single self-contained HTML file — no build step, no dependencies, works offline.
+This is the **website** version. The login runs on Vercel's server, so the tool is
+never sent to the browser until someone signs in.
 
-## Deploy to Vercel
+Default login (shared):
+- **Username:** Brandon
+- **Password:** DDS7150
 
-This is a static site. Vercel serves `index.html` from the repo root automatically.
+## Files
+```
+index.html        the pricing tool (served at / after login)
+login.html        branded sign-in page (served at /login)
+middleware.js     guards every page; redirects to /login if not signed in
+api/login.js      checks the username/password, sets the session cookie
+api/logout.js     clears the session
+vercel.json       clean URLs + no-cache on the tool
+package.json      marks this as a functions project for Vercel
+```
 
-### Option A — Git (recommended)
-1. Put `index.html` and `vercel.json` in your repo root.
+## Deploy
+1. Put all of these in your repo root (keep `api/` as a folder).
 2. Commit and push:
    ```
-   git add index.html vercel.json
-   git commit -m "Add pricing tool"
+   git add .
+   git commit -m "Password-protected pricing tool"
    git push
    ```
-3. In the Vercel dashboard, import the repo (or it auto-deploys if already linked).
-   - Framework Preset: **Other** (no build)
-   - Build Command: leave empty
-   - Output Directory: `.`
-4. Every push to the main branch redeploys automatically.
+3. Vercel auto-detects the serverless functions in `api/` and the `middleware.js`.
+   No build command, framework preset **Other**.
 
-### Option B — Vercel CLI
-```
-npm i -g vercel
-vercel        # preview deploy
-vercel --prod # production deploy
-```
+That's it — visiting the site now shows the login page first.
 
-### Option C — Drag & drop
-Drag the folder onto the Vercel dashboard's "Add New… > Project" upload area.
+## Changing the username / password (no code edits)
+In the Vercel dashboard → your project → **Settings → Environment Variables**, add:
+- `AUTH_USER` — the username
+- `AUTH_PASS` — the password
+- `AUTH_TOKEN` — any long random string (the session secret)
 
-## Updating prices
-When you get a new build of the tool, just replace `index.html`, commit, and push. The `vercel.json` sets `index.html` to no-cache so staff always load the latest version.
+Then redeploy. If you don't set these, it uses the defaults above.
+Setting `AUTH_TOKEN` to your own random value is recommended once you're live —
+it makes existing sessions yours alone and invalidates the built-in default.
 
 ## Notes
-- The logo is embedded in the file (base64), so there are no external assets to host.
-- Same file works for desktop, phone (responsive), and can be wrapped as a Windows `.exe` later.
+- The session cookie lasts 30 days, so staff sign in once per device per month.
+- "Log out" is in the top-right of the tool (desktop).
+- This repo is the website only. The **EXE** uses the plain tool file with no login —
+  keep them in separate repos/folders so the login layer never ships in the EXE.
